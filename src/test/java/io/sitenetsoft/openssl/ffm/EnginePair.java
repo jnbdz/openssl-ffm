@@ -14,7 +14,9 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
 import javax.net.ssl.SSLParameters;
+import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * Moves bytes between two engines through in-memory network buffers.
@@ -115,6 +117,8 @@ final class EnginePair {
     }
 
     void close() throws Exception {
+        drain(serverToClient, client);
+        drain(clientToServer, server);
         client.closeOutbound();
         ByteBuffer net = ByteBuffer.allocate(client.getSession().getPacketBufferSize());
         client.wrap(ByteBuffer.allocate(0), net);
@@ -132,6 +136,20 @@ final class EnginePair {
         check(server.isOutboundDone(), "server outbound done");
     }
 
+    /**
+     * Delivers bytes left from the handshake, such as TLS 1.3 session tickets.
+     */
+    private static void drain(ByteBuffer pending, SSLEngine to) throws Exception {
+        pending.flip();
+        while (pending.hasRemaining()) {
+            SSLEngineResult result = to.unwrap(pending, ByteBuffer.allocate(OpenSslEngine.MAX_PLAINTEXT_LENGTH));
+            if (result.bytesConsumed() == 0) {
+                break;
+            }
+        }
+        pending.compact();
+    }
+
     static void check(boolean condition, String what) {
         if (!condition) {
             throw new AssertionError("Check failed: " + what);
@@ -139,18 +157,67 @@ final class EnginePair {
     }
 
     static OpenSslEngine openSslServer(String keyStore) throws Exception {
-        KeyStore ks = load(keyStore);
-        PrivateKey key = (PrivateKey) ks.getKey("server", "password".toCharArray());
-        Certificate[] chain = ks.getCertificateChain("server");
-        OpenSslContext context = new OpenSslContext(key, Arrays.copyOf(chain, chain.length, X509Certificate[].class));
-        OpenSslEngine engine = new OpenSslEngine(context, null, -1);
+        return openSslServer(keyStore, null);
+    }
+
+    static OpenSslEngine openSslServer(String keyStore, String trustStore) throws Exception {
+        OpenSslEngine engine = new OpenSslEngine(context(keyStore, trustStore), null, -1);
         engine.setUseClientMode(false);
         return engine;
     }
 
-    static OpenSslEngine openSslClient() throws Exception {
-        OpenSslEngine engine = new OpenSslEngine(new OpenSslContext(null, null), "localhost", 8443);
+    static OpenSslEngine openSslClient(String trustStore) throws Exception {
+        return openSslClient(trustStore, null, "localhost");
+    }
+
+    static OpenSslEngine openSslClient(String trustStore, String keyStore, String host) throws Exception {
+        OpenSslEngine engine = new OpenSslEngine(context(keyStore, trustStore), host, 8443);
         engine.setUseClientMode(true);
+        return engine;
+    }
+
+    static OpenSslContext context(String keyStore, String trustStore) throws Exception {
+        X509TrustManager trust = trustStore == null ? null : trustManager(trustStore);
+        if (keyStore == null) {
+            return new OpenSslContext(null, null, trust);
+        }
+        KeyStore ks = load(keyStore);
+        String alias = ks.aliases().nextElement();
+        PrivateKey key = (PrivateKey) ks.getKey(alias, "password".toCharArray());
+        Certificate[] chain = ks.getCertificateChain(alias);
+        return new OpenSslContext(key, Arrays.copyOf(chain, chain.length, X509Certificate[].class), trust);
+    }
+
+    static X509TrustManager trustManager(String trustStore) throws Exception {
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(load(trustStore));
+        for (TrustManager manager : tmf.getTrustManagers()) {
+            if (manager instanceof X509TrustManager x509) {
+                return x509;
+            }
+        }
+        throw new IllegalStateException("No X509TrustManager");
+    }
+
+    static SSLEngine jdkClient(String trustStore, String keyStore, String protocol, String... alpn) throws Exception {
+        TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+        tmf.init(load(trustStore));
+        KeyManagerFactory kmf = null;
+        if (keyStore != null) {
+            kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
+            kmf.init(load(keyStore), "password".toCharArray());
+        }
+        SSLContext context = SSLContext.getInstance("TLS");
+        context.init(kmf == null ? null : kmf.getKeyManagers(), tmf.getTrustManagers(), null);
+        SSLEngine engine = context.createSSLEngine("localhost", 8443);
+        engine.setUseClientMode(true);
+        engine.setEnabledProtocols(new String[] { protocol });
+        SSLParameters parameters = engine.getSSLParameters();
+        parameters.setEndpointIdentificationAlgorithm("HTTPS");
+        if (alpn.length > 0) {
+            parameters.setApplicationProtocols(alpn);
+        }
+        engine.setSSLParameters(parameters);
         return engine;
     }
 

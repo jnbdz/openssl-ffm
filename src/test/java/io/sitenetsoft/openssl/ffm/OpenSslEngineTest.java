@@ -42,7 +42,7 @@ class OpenSslEngineTest {
 
     @Test
     void openSslClientWithJdkServer() throws Exception {
-        OpenSslEngine client = EnginePair.openSslClient();
+        OpenSslEngine client = EnginePair.openSslClient("server-ec.p12");
         EnginePair pair = new EnginePair(client, EnginePair.jdkServer("server-ec.p12"));
         pair.handshake();
 

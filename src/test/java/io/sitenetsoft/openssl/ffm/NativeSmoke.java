@@ -35,7 +35,7 @@ public final class NativeSmoke {
             return pair.server.getSession().getProtocol() + " " + pair.server.getSession().getCipherSuite();
         });
         failures += run("tls13, OpenSSL client, JDK server", () -> {
-            EnginePair pair = new EnginePair(EnginePair.openSslClient(), EnginePair.jdkServer("server-ec.p12"));
+            EnginePair pair = new EnginePair(EnginePair.openSslClient("server-ec.p12"), EnginePair.jdkServer("server-ec.p12"));
             pair.handshake();
             exchange(pair, "request", "response");
             pair.close();
