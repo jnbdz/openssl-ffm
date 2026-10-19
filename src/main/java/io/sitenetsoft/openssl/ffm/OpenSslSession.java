@@ -11,18 +11,16 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSessionContext;
 
 /**
- * The session of one {@link OpenSslEngine}. Peer certificates are not exposed yet.
+ * The session of one {@link OpenSslEngine}.
  */
 final class OpenSslSession implements SSLSession {
 
     private final OpenSslEngine engine;
-    private final X509Certificate[] localCertificates;
     private final long creationTime = System.currentTimeMillis();
     private final Map<String, Object> values = new ConcurrentHashMap<>();
 
-    OpenSslSession(OpenSslEngine engine, X509Certificate[] localCertificates) {
+    OpenSslSession(OpenSslEngine engine) {
         this.engine = engine;
-        this.localCertificates = localCertificates;
     }
 
     @Override
@@ -76,22 +74,28 @@ final class OpenSslSession implements SSLSession {
 
     @Override
     public Certificate[] getPeerCertificates() throws SSLPeerUnverifiedException {
-        throw new SSLPeerUnverifiedException("Peer certificates are not available");
+        X509Certificate[] peer = engine.peerCertificates();
+        if (peer == null || peer.length == 0) {
+            throw new SSLPeerUnverifiedException("The peer is not authenticated");
+        }
+        return peer;
     }
 
     @Override
     public Certificate[] getLocalCertificates() {
-        return localCertificates.length == 0 ? null : localCertificates.clone();
+        X509Certificate[] local = engine.localCertificates();
+        return local.length == 0 ? null : local;
     }
 
     @Override
     public Principal getPeerPrincipal() throws SSLPeerUnverifiedException {
-        throw new SSLPeerUnverifiedException("Peer certificates are not available");
+        return ((X509Certificate) getPeerCertificates()[0]).getSubjectX500Principal();
     }
 
     @Override
     public Principal getLocalPrincipal() {
-        return localCertificates.length == 0 ? null : localCertificates[0].getSubjectX500Principal();
+        X509Certificate[] local = engine.localCertificates();
+        return local.length == 0 ? null : local[0].getSubjectX500Principal();
     }
 
     @Override

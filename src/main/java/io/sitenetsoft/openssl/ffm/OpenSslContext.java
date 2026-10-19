@@ -9,10 +9,17 @@ import java.security.PrivateKey;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.X509Certificate;
 
+import java.security.KeyStore;
+import java.security.NoSuchAlgorithmException;
+
 import javax.net.ssl.SSLException;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
 
 /**
  * An OpenSSL {@code SSL_CTX}, holding the local key and certificate chain.
+ * Peer certificates are checked by the Java trust manager, from OpenSSL's certificate verification callback.
  */
 final class OpenSslContext implements AutoCloseable {
 
@@ -20,11 +27,17 @@ final class OpenSslContext implements AutoCloseable {
 
     private final MemorySegment ctx;
     private final X509Certificate[] chain;
+    private final X509TrustManager trustManager;
     private boolean closed;
 
     OpenSslContext(PrivateKey key, X509Certificate[] chain) throws SSLException {
+        this(key, chain, null);
+    }
+
+    OpenSslContext(PrivateKey key, X509Certificate[] chain, X509TrustManager trustManager) throws SSLException {
         init();
         this.chain = chain == null ? new X509Certificate[0] : chain.clone();
+        this.trustManager = trustManager == null ? defaultTrustManager() : trustManager;
         try {
             OpenSsl.clearError();
             MemorySegment method = (MemorySegment) Handles.TLS_method.invokeExact();
@@ -40,6 +53,8 @@ final class OpenSslContext implements AutoCloseable {
             if (key != null) {
                 useKeyAndChain(key);
             }
+            Handles.SSL_CTX_set_cert_verify_callback.invokeExact(ctx, OpenSslCallbacks.Stubs.VERIFY, MemorySegment.NULL);
+            Handles.SSL_CTX_set_alpn_select_cb.invokeExact(ctx, OpenSslCallbacks.Stubs.ALPN_SELECT, MemorySegment.NULL);
         } catch (SSLException | RuntimeException | Error e) {
             throw e;
         } catch (Throwable t) {
@@ -105,7 +120,22 @@ final class OpenSslContext implements AutoCloseable {
         }
     }
 
-    private static void init() throws SSLException {
+    private static X509TrustManager defaultTrustManager() throws SSLException {
+        try {
+            TrustManagerFactory factory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+            factory.init((KeyStore) null);
+            for (TrustManager manager : factory.getTrustManagers()) {
+                if (manager instanceof X509TrustManager x509) {
+                    return x509;
+                }
+            }
+            throw new SSLException("No default X509TrustManager");
+        } catch (NoSuchAlgorithmException | java.security.KeyStoreException e) {
+            throw new SSLException(e);
+        }
+    }
+
+    static void init() throws SSLException {
         if (initialized) {
             return;
         }
@@ -132,6 +162,10 @@ final class OpenSslContext implements AutoCloseable {
 
     X509Certificate[] chain() {
         return chain.clone();
+    }
+
+    X509TrustManager trustManager() {
+        return trustManager;
     }
 
     @Override

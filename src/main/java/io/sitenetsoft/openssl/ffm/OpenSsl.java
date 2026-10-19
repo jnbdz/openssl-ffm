@@ -37,6 +37,14 @@ final class OpenSsl {
     static final int SSL_CTRL_SET_MAX_PROTO_VERSION = 124;
     static final int TLSEXT_NAMETYPE_host_name = 0;
 
+    static final int SSL_VERIFY_NONE = 0;
+    static final int SSL_VERIFY_PEER = 1;
+    static final int SSL_VERIFY_FAIL_IF_NO_PEER_CERT = 2;
+
+    static final int SSL_TLSEXT_ERR_OK = 0;
+    static final int SSL_TLSEXT_ERR_ALERT_FATAL = 2;
+    static final int SSL_TLSEXT_ERR_NOACK = 3;
+
     static final int TLS1_2_VERSION = 0x0303;
     static final int TLS1_3_VERSION = 0x0304;
 
@@ -97,6 +105,42 @@ final class OpenSsl {
                 FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT));
         static final MethodHandle BIO_ctrl_pending = handle("BIO_ctrl_pending", FunctionDescriptor.of(JAVA_LONG, ADDRESS));
         static final MethodHandle BIO_free = handle("BIO_free", FunctionDescriptor.of(JAVA_INT, ADDRESS));
+        static final MethodHandle SSL_CTX_set_cert_verify_callback = handle("SSL_CTX_set_cert_verify_callback",
+                FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, ADDRESS));
+        static final MethodHandle SSL_CTX_set_alpn_select_cb = handle("SSL_CTX_set_alpn_select_cb",
+                FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, ADDRESS));
+        static final MethodHandle SSL_CTX_set_cipher_list = handle("SSL_CTX_set_cipher_list",
+                FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+        static final MethodHandle SSL_set_verify = handle("SSL_set_verify",
+                FunctionDescriptor.ofVoid(ADDRESS, JAVA_INT, ADDRESS));
+        static final MethodHandle SSL_set_alpn_protos = handle("SSL_set_alpn_protos",
+                FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS, JAVA_INT));
+        static final MethodHandle SSL_get0_alpn_selected = handle("SSL_get0_alpn_selected",
+                FunctionDescriptor.ofVoid(ADDRESS, ADDRESS, ADDRESS));
+        static final MethodHandle SSL_set_cipher_list = handle("SSL_set_cipher_list",
+                FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+        static final MethodHandle SSL_set_ciphersuites = handle("SSL_set_ciphersuites",
+                FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
+        static final MethodHandle SSL_get_ciphers = handle("SSL_get_ciphers", FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle SSL_CIPHER_get_name = handle("SSL_CIPHER_get_name", FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle SSL_CIPHER_get_version = handle("SSL_CIPHER_get_version",
+                FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle SSL_get1_peer_certificate = handle("SSL_get1_peer_certificate",
+                FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle SSL_get_peer_cert_chain = handle("SSL_get_peer_cert_chain",
+                FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle SSL_get_ex_data_X509_STORE_CTX_idx = handle("SSL_get_ex_data_X509_STORE_CTX_idx",
+                FunctionDescriptor.of(JAVA_INT));
+        static final MethodHandle X509_STORE_CTX_get_ex_data = handle("X509_STORE_CTX_get_ex_data",
+                FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT));
+        static final MethodHandle X509_STORE_CTX_get0_cert = handle("X509_STORE_CTX_get0_cert",
+                FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle X509_STORE_CTX_get0_untrusted = handle("X509_STORE_CTX_get0_untrusted",
+                FunctionDescriptor.of(ADDRESS, ADDRESS));
+        static final MethodHandle OPENSSL_sk_num = handle("OPENSSL_sk_num", FunctionDescriptor.of(JAVA_INT, ADDRESS));
+        static final MethodHandle OPENSSL_sk_value = handle("OPENSSL_sk_value",
+                FunctionDescriptor.of(ADDRESS, ADDRESS, JAVA_INT));
+        static final MethodHandle i2d_X509 = handle("i2d_X509", FunctionDescriptor.of(JAVA_INT, ADDRESS, ADDRESS));
         static final MethodHandle ERR_get_error = handle("ERR_get_error", FunctionDescriptor.of(JAVA_LONG));
         static final MethodHandle ERR_error_string_n = handle("ERR_error_string_n",
                 FunctionDescriptor.ofVoid(JAVA_LONG, ADDRESS, JAVA_LONG));
