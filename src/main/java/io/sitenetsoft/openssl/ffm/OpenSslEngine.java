@@ -32,8 +32,8 @@ final class OpenSslEngine extends SSLEngine {
     private static final List<String> SUPPORTED_PROTOCOLS = List.of("TLSv1.2", "TLSv1.3");
 
     private final OpenSslContext context;
-    private final Arena arena = Arena.ofShared();
-    private final MemorySegment buffer = arena.allocate(MAX_ENCRYPTED_PACKET_LENGTH);
+    // freed with the engine; Arena.ofShared needs -H:+SharedArenaSupport in native executables
+    private final MemorySegment buffer = Arena.ofAuto().allocate(MAX_ENCRYPTED_PACKET_LENGTH);
     private MemorySegment ssl;
     private MemorySegment networkBio;
     private final OpenSslSession session;
@@ -502,8 +502,6 @@ final class OpenSslEngine extends SSLEngine {
             }
         } catch (Throwable t) {
             throw OpenSsl.rethrow(t);
-        } finally {
-            arena.close();
         }
     }
 
