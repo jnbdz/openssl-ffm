@@ -1,0 +1,113 @@
+{
+  "foreign": {
+    "downcalls": [
+      {
+        "returnType": "jlong",
+        "parameterTypes": []
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "jlong",
+          "void*"
+        ]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": []
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": [
+          "void*"
+        ]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": [
+          "void*"
+        ]
+      },
+      {
+        "returnType": "jlong",
+        "parameterTypes": [
+          "void*",
+          "jint",
+          "jlong",
+          "void*"
+        ]
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "void*",
+          "void*"
+        ]
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "void*"
+        ]
+      },
+      {
+        "returnType": "void*",
+        "parameterTypes": [
+          "void*",
+          "void*",
+          "jlong"
+        ]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": [
+          "void*",
+          "void*",
+          "void*"
+        ]
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "void*",
+          "void*",
+          "jint"
+        ]
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "void*",
+          "jint"
+        ]
+      },
+      {
+        "returnType": "jint",
+        "parameterTypes": [
+          "void*",
+          "jlong",
+          "void*",
+          "jlong"
+        ]
+      },
+      {
+        "returnType": "jlong",
+        "parameterTypes": [
+          "void*"
+        ]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": [
+          "jlong",
+          "void*",
+          "jlong"
+        ]
+      },
+      {
+        "returnType": "void",
+        "parameterTypes": []
+      }
+    ]
+  }
+}
